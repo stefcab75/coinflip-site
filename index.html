@@ -3,34 +3,610 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interact with Reward Contract</title>
-    <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
+    <title>CoinFlip</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js" type="application/javascript"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --text-color: #1e293b;
+            --animation-bg: rgba(135, 206, 235, 0.9);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        body { 
+            background-image: url('./p.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            margin: 2rem auto;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
+        }
+
+        .balance-container {
+            background: rgba(255, 255, 255, 0.6);
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            font-size: 1.2rem;
+            color: var(--text-color);
+        }
+
+        .bet-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .preset-amounts {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .amount-btn {
+            background: var(--secondary-color);
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .amount-btn:hover {
+            background: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        input {
+            width: 200px;
+            padding: 1rem;
+            font-size: 1.2rem;
+            border: 2px solid rgba(226, 232, 240, 0.8);
+            border-radius: 12px;
+            margin: 1rem 0;
+            text-align: center;
+            transition: all 0.3s ease;
+            color: var(--text-color);
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.2);
+            background: white;
+        }
+
+        button {
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            margin: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        button:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .notification {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 25px;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            animation: slideIn 0.5s ease-out;
+            text-align: center;
+            min-width: 300px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            white-space: pre-line;
+        }
+
+        .transaction-info {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 12px;
+            font-size: 0.9rem;
+            word-break: break-all;
+            display: none;
+        }
+
+        .transaction-info a {
+            color: var(--primary-color);
+            text-decoration: underline;
+        }
+
+        .win-animation, .lose-animation, .loading-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            display: none;
+            background: var(--animation-bg);
+            padding: 20px;
+            border-radius: 16px;
+            animation: fadeIn 0.5s ease-out;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .wallet-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+
+        .wallet-button button {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .wallet-button button:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -40%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translate(-50%, -20px);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, 0);
+                opacity: 1;
+            }
+        }
+
+        .notification.pending {
+            background-color: #ffd700;
+            color: black;
+        }
+
+        .notification.win {
+            background-color: #4CAF50;
+        }
+
+        .notification.lose {
+            background-color: #f44336;
+        }
+
+        .notification.error {
+            background-color: #ff9800;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+                margin: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            input {
+                width: 180px;
+                font-size: 1rem;
+            }
+
+            button {
+                padding: 0.8rem 1.6rem;
+                font-size: 1rem;
+            }
+
+            .notification {
+                width: 90%;
+                margin: 0 5%;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Interact with Reward Contract</h1>
-    <button id="claimRewardButton">Claim Reward</button>
-    <div id="message"></div>
+    <div class="wallet-button">
+        <button id="connectButton" onclick="connectWallet()">Connecter Wallet</button>
+    </div>
+
+    <div class="container">
+        <h1>CoinFlip</h1>
+        
+        <div class="balance-container">
+            <p>Votre solde : <span id="playerBalance">0.0</span> ETH</p>
+        </div>
+
+        <div class="bet-container">
+            <input type="number" 
+                   id="betAmount" 
+                   step="0.01" 
+                   min="0.01" 
+                   placeholder="Montant du pari en ETH"
+            >
+            <div class="preset-amounts">
+                <button class="amount-btn" onclick="setBetAmount(0.05)">0.05 ETH</button>
+                <button class="amount-btn" onclick="setBetAmount(0.1)">0.1 ETH</button>
+            </div>
+            <button id="flipButton">FLIP!</button>
+            <div id="lastTx" class="transaction-info"></div>
+        </div>
+
+        <div id="notification" class="notification"></div>
+    </div>
+
+    <div id="winAnimation" class="win-animation">
+        <iframe src="https://giphy.com/embed/sQfeUbu1wdeo6UL4Z5" 
+                width="900" 
+                height="900" 
+                frameBorder="0" 
+                class="giphy-embed" 
+                allowFullScreen>
+        </iframe>
+    </div>
+
+    <div id="loadingAnimation" class="loading-animation">
+        <iframe src="https://giphy.com/embed/XPmflnLpW7l6g0rpY1" 
+                width="300" 
+                height="300" 
+                frameBorder="0" 
+                class="giphy-embed" 
+                allowFullScreen>
+        </iframe>
+    </div>
+
+    <div id="loseAnimation" class="lose-animation">
+        <iframe src="https://giphy.com/embed/srSHYHLai5OhZ21ako" 
+                width="900" 
+                height="900" 
+                frameBorder="0" 
+                class="giphy-embed" 
+                allowFullScreen>
+        </iframe>
+    </div>
 
     <script>
-        const contractAddress = "0x709DaC43F25F91A766FF26548cB0ACe6aC48caba"; // Adresse du contrat
-        const abi = [
-            "function getReward() external",
-            "event RewardClaimed(address indexed user, uint256 amount)"
-        ]; // ABI simplifiée
+        const CONTRACT_ADDRESS = "0x392f4CAB68f40EdB89Ca13B0901d0D05Be89700B";
+        let provider, contract, account;
+        let isConnected = false;
 
-        document.getElementById("claimRewardButton").onclick = async () => {
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            const signer = provider.getSigner();
-            const contract = new ethers.Contract(contractAddress, abi, signer);
+        const abi = [
+            {
+                "inputs": [],
+                "name": "placeBet",
+                "outputs": [],
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {"indexed": true, "name": "player", "type": "address"},
+                    {"indexed": false, "name": "amount", "type": "uint256"},
+                    {"indexed": false, "name": "result", "type": "bool"}
+                ],
+                "name": "BetPlaced",
+                "type": "event"
+            }
+        ];
+
+        function setBetAmount(amount) {
+            document.getElementById('betAmount').value = amount;
+        }
+
+        async function connectWallet() {
+            if (isConnected) {
+                // Déconnexion
+                account = null;
+                provider = null;
+                contract = null;
+                isConnected = false;
+                document.getElementById('connectButton').textContent = "Connecter Wallet";
+                document.getElementById('playerBalance').textContent = "0.0";
+                return;
+            }
 
             try {
-                const tx = await contract.getReward();
-                await tx.wait();
-                document.getElementById("message").innerText = "Reward claimed successfully!";
+                if (typeof window.ethereum === 'undefined') {
+                    throw new Error("MetaMask n'est pas installé");
+                }
+
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                if (chainId !== '0x2B74') {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: '0x2B74' }],
+                        });
+                    } catch (switchError) {
+                        if (switchError.code === 4902) {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [{
+                                    chainId: '0x2B74',
+                                    chainName: 'Abstract Testnet',
+                                    nativeCurrency: {
+                                        name: 'ETH',
+                                        symbol: 'ETH',
+                                        decimals: 18
+                                    },
+                                    rpcUrls: ['https://testnet.abstract.network:8545'],
+                                    blockExplorerUrls: ['https://explorer.testnet.abs.xyz']
+                                }]
+                            });
+                        } else {
+                            throw switchError;
+                        }
+                    }
+                }
+
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                account = accounts[0];
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                const signer = provider.getSigner();
+
+                contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
+                await updatePlayerBalance();
+
+                // Mettre à jour le texte du bouton et l'état de connexion
+                document.getElementById('connectButton').textContent = `${account.substring(0, 6)}...${account.substring(38)}`;
+                isConnected = true;
+                
+                return account;
             } catch (error) {
-                document.getElementById("message").innerText = "Error claiming reward: " + error.message;
+                console.error("Erreur de connexion :", error);
+                showNotification("Erreur de connexion : " + error.message, "error");
+                throw error;
             }
-        };
+        }
+
+        async function placeBet() {
+            if (!isConnected) {
+                showNotification("Veuillez d'abord connecter votre wallet", "error");
+                return;
+            }
+
+            const amount = parseFloat(document.getElementById('betAmount').value);
+            if (!amount || amount <= 0) {
+                showNotification("Veuillez entrer un montant valide", "error");
+                return;
+            }
+
+            try {
+                // Vérifier le solde avant de parier
+                const balance = await provider.getBalance(account);
+                const betAmount = ethers.utils.parseEther(amount.toString());
+                
+                if (balance.lt(betAmount)) {
+                    showNotification("Fonds insuffisants pour placer ce pari", "error");
+                    return;
+                }
+
+                // Vérifier le solde du contrat
+                const contractBalance = await provider.getBalance(CONTRACT_ADDRESS);
+                if (contractBalance.lt(betAmount.mul(2))) {
+                    showNotification("Le contrat n'a pas assez de fonds pour payer les gains potentiels. Veuillez réduire votre mise.", "error");
+                    return;
+                }
+
+                // Cacher les notifications précédentes
+                document.getElementById('lastTx').style.display = 'none';
+                document.getElementById('notification').style.display = 'none';
+                document.getElementById('winAnimation').style.display = 'none';
+                document.getElementById('loseAnimation').style.display = 'none';
+                document.getElementById('loadingAnimation').style.display = 'none';
+
+                const flipButton = document.getElementById('flipButton');
+                flipButton.disabled = true;
+
+                // Écouter l'événement avant d'envoyer la transaction
+                contract.once("BetPlaced", async (player, amount, result, event) => {
+                    console.log("Événement reçu:", { player, amount: ethers.utils.formatEther(amount), result });
+                    
+                    // Afficher l'animation de suspense pendant 2 secondes
+                    const loadingAnimation = document.getElementById('loadingAnimation');
+                    loadingAnimation.style.display = 'block';
+                    
+                    // Attendre 2 secondes avant d'afficher le résultat
+                    setTimeout(async () => {
+                        loadingAnimation.style.display = 'none';
+                        
+                        // Mettre à jour le solde immédiatement après le résultat
+                        await updatePlayerBalance();
+                        
+                        if (result) {
+                            const txLink = `https://explorer.testnet.abs.xyz/tx/${event.transactionHash}`;
+                            
+                            // Afficher l'animation de victoire
+                            const winAnimation = document.getElementById('winAnimation');
+                            winAnimation.style.display = 'block';
+                            
+                            setTimeout(() => {
+                                winAnimation.style.display = 'none';
+                            }, 3000);
+                            
+                            showNotification(
+                                `🎉 GAGNÉ ! Vous avez gagné ${parseFloat(ethers.utils.formatEther(amount)).toFixed(3)} ETH!`, 
+                                "win"
+                            );
+                            
+                            const lastTx = document.getElementById('lastTx');
+                            lastTx.innerHTML = `Dernière transaction gagnante : <a href="${txLink}" target="_blank">${event.transactionHash}</a>`;
+                            lastTx.style.display = 'block';
+                        } else {
+                            // Afficher l'animation de défaite
+                            const loseAnimation = document.getElementById('loseAnimation');
+                            loseAnimation.style.display = 'block';
+                            
+                            setTimeout(() => {
+                                loseAnimation.style.display = 'none';
+                            }, 3000);
+                            
+                            showNotification(
+                                `😢 PERDU ! Vous avez perdu ${parseFloat(ethers.utils.formatEther(amount)).toFixed(3)} ETH`, 
+                                "lose"
+                            );
+                        }
+                        
+                        flipButton.disabled = false;
+                    }, 2000);
+                });
+
+                const tx = await contract.placeBet({
+                    value: betAmount,
+                    gasLimit: 500000
+                });
+
+                // Afficher l'animation de chargement pendant l'attente de la confirmation
+                document.getElementById('loadingAnimation').style.display = 'block';
+                
+                // Attendre la confirmation de la transaction
+                const receipt = await tx.wait();
+                
+                // Mettre à jour le solde après la confirmation de la transaction
+                await updatePlayerBalance();
+                
+                // Vérifier si la transaction a réussi
+                if (receipt.status === 0) {
+                    throw new Error("La transaction a échoué");
+                }
+                
+            } catch (error) {
+                console.error("Erreur lors du pari :", error);
+                let errorMessage = "Erreur lors du pari";
+                
+                if (error.message.includes("insufficient funds")) {
+                    errorMessage = "Fonds insuffisants pour placer ce pari";
+                } else if (error.message.includes("user rejected")) {
+                    errorMessage = "Transaction rejetée par l'utilisateur";
+                } else if (error.message.includes("transaction failed")) {
+                    errorMessage = "La transaction a échoué. Le contrat n'a peut-être plus assez de fonds.";
+                }
+                
+                document.getElementById('loadingAnimation').style.display = 'none';
+                showNotification(errorMessage, "error");
+                document.getElementById('flipButton').disabled = false;
+                
+                // Mettre à jour le solde même en cas d'erreur
+                await updatePlayerBalance();
+            }
+        }
+
+        async function updatePlayerBalance() {
+            if (provider && account) {
+                const balance = await provider.getBalance(account);
+                document.getElementById('playerBalance').textContent = 
+                    `${parseFloat(ethers.utils.formatEther(balance)).toFixed(3)}`;
+            }
+        }
+
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            notification.innerHTML = message.replace(/\n/g, '<br>');
+            notification.className = `notification ${type}`;
+            notification.style.display = 'block';
+        }
+
+        // Initialisation
+        document.getElementById('flipButton').addEventListener('click', placeBet);
+
+        // Gestion des événements MetaMask
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', async function (accounts) {
+                if (accounts.length > 0) {
+                    account = accounts[0];
+                    await updatePlayerBalance();
+                }
+            });
+
+            window.ethereum.on('chainChanged', function() {
+                window.location.reload();
+            });
+        }
     </script>
 </body>
 </html>
