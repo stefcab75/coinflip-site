@@ -1,0 +1,67 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+contract CoinFlip {
+    address public owner;
+    
+    event BetPlaced(address indexed player, uint256 amount, bool result);
+    event FundsAdded(uint256 amount);
+    
+    constructor() {
+        owner = msg.sender;
+    }
+    
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can call this function");
+        _;
+    }
+    
+    // Function to get contract balance
+    function getBalance() public view returns (uint256) {
+        return address(this).balance;
+    }
+    
+    // Function for owner to add funds
+    function addFunds() external payable onlyOwner {
+        emit FundsAdded(msg.value);
+    }
+    
+    // Main betting function
+    function placeBet() public payable returns (bool) {
+        require(msg.value > 0, "Bet amount must be greater than 0");
+        
+        // Check if contract has enough funds to pay potential winnings
+        require(address(this).balance >= msg.value * 2, "Contract has insufficient funds for potential payout");
+        
+        // Generate pseudo-random number using block data
+        bool win = generateRandomBool();
+        
+        if (win) {
+            // Transfer double the bet amount back to player
+            (bool sent, ) = payable(msg.sender).call{value: msg.value * 2}("");
+            require(sent, "Failed to send winnings");
+        }
+        
+        // Emit event with result
+        emit BetPlaced(msg.sender, msg.value, win);
+        
+        return win;
+    }
+    
+    // Function to generate pseudo-random boolean
+    function generateRandomBool() private view returns (bool) {
+        return uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, msg.sender))) % 2 == 0;
+    }
+    
+    // Allow owner to withdraw funds
+    function withdraw() public onlyOwner {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No funds to withdraw");
+        
+        (bool sent, ) = payable(owner).call{value: balance}("");
+        require(sent, "Failed to withdraw");
+    }
+    
+    // Allow contract to receive ETH
+    receive() external payable {}
+}
